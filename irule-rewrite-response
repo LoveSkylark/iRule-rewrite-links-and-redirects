@@ -1,0 +1,54 @@
+when HTTP_REQUEST {
+   set esp_host [getfield [HTTP::host] ":" 1]
+   set esp_uri [HTTP::uri]
+   set esp_get [HTTP::method]
+   set esp_port [TCP::local_port] 
+   STREAM::disable
+
+   # search for encrypted IP hidden in the URI (assigned from previous HTTP_RESPONSE)
+   scan $esp_uri {/C.%[^/]} hidden_IP
+   if {[info exists hidden_IP] && ( $hidden_IP > 0)} {
+   
+     # Decrypt IP and set it as the internal destination
+     set decrypt_IP [b64decode $hidden_IP]
+     node $decrypt_IP:$esp_port
+     log local0. "DECODING $hidden_IP to $decrypt_IP"
+     
+     # Remove Decrypted IP from the URI
+     set esp_uri [regsub -all /C.$hidden_IP/ $esp_uri /]
+     HTTP::uri $esp_uri
+     log local0. "URI: $esp_uri"
+   }
+}
+
+when SERVER_CONNECTED {
+    set esp_server [IP::server_addr]
+}   
+
+when HTTP_RESPONSE {
+   
+   # If respons is a normal reply replace  IP with FQDN in text
+   if { ([HTTP::header value Content-Type] contains "text") && ([HTTP::status] == 200) } {
+      STREAM::expression @http://$esp_server@https://$esp_host@
+      STREAM::enable
+   
+   # If respons is a redirect
+   } elseif { ([HTTP::is_redirect]) && ( $esp_get == "GET")} {
+     set esp_header [HTTP::header Location]
+     scan $esp_header "http://%d.%d.%d.%d:%d" ip1 ip2 ip3 ip4 port
+     
+     # Check if redirect has IP
+     if {[info exists ip4] && ($ip4 > 0)} {
+     
+       # Encrypt the IP
+       set encrypt_IP [b64encode $ip1.$ip2.$ip3.$ip4]
+       log local0. "ENCODING $ip1.$ip2.$ip3.$ip4 to $encrypt_IP"
+
+       # Replace IP with FQDN and append the encrypted IP to the URI
+       set esp_header [regsub -all http://$ip1.$ip2.$ip3.$ip4:$port/ $esp_header https://$esp_host:$port/C.$encrypt_IP/]       
+       log local0. "http://$ip1.$ip2.$ip3.$ip4:$port/ is now https://$esp_host:$port/C.$encrypt_IP/"
+       HTTP::header replace Location $esp_header
+     }
+  }
+   
+}
