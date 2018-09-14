@@ -8,6 +8,8 @@ http://10.10.1.1/index.html >> https://website.example.com/index.html
 This will also rewrite any redirect responses by encrypting the internal destination header and append it to the link, 
 then it will decrypt the header and change the destination to the new IP
 
-1. Location: http://10.10.2.2/newsite/index.html >> Location: https://website.example.com/C.MTAuNDAuMS4xMjA=/newsite/index.html
+1. Location: http://10.10.2.2/newsite/index.html 
+      >> Location: https://website.example.com/C.MTAuNDAuMS4xMjA=/newsite/index.html
 
-2. https://website.example.com/C.MTAuNDAuMS4xMjA=/newsite/index.html  >> https://website.example.com/newsite/index.html & node 10.10.2.2
+2. https://website.example.com/C.MTAuNDAuMS4xMjA=/newsite/index.html  
+      >> https://website.example.com/newsite/index.html & node 10.10.2.2
