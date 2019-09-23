@@ -1,7 +1,7 @@
 # iRule-rewrite-links-and-redirects
 Proxies communication of multiple internal websites that depend on redirects and internal links to jump between services.
 
-This will replace internal links responses with the FQDN of the loadbalancer in front.
+Without using cookies this will replace internal links responses with the FQDN of the loadbalancer in front.
 
 http://10.10.1.1/index.html >> https://website.example.com/index.html
 
